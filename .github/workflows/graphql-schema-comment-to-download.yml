@@ -1,0 +1,32 @@
+name: GraphQL Schema Download on Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  download-schema:
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/download-schema')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Pull Request Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Commit and push if it changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          echo ${{github.event.issue}}
+          echo "Current branch:"
+          git branch --show-current
+          echo "PR Head Ref: ${{ steps.pr_info.outputs.data.head.ref }}"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update GraphQL schema"
+            git push origin HEAD:${{ steps.pr_info.outputs.data.head.ref }}
+          fi
