@@ -10,10 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Extract PR Number
+        id: pr_number
+        run: echo "::set-output name=number::${{ github.event.issue.number }}"
+
+      - name: Fetch PR Details
+        id: pr_details
+        uses: octokit/request-action@v2.x
+        with:
+          route: GET /repos/${{ github.repository }}/pulls/${{ steps.pr_number.outputs.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout Pull Request Branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ fromJson(steps.pr_details.outputs.data).head.ref }}
+
+      - name: Create Dummy Data
+        run: |
+          echo "Dummy data for commit" >> dummy.txt
+          git add dummy.txt
+          echo "Dummy data added to dummy.txt"
 
       - name: Commit and push if it changed
         run: |
@@ -27,11 +45,11 @@ jobs:
 
           echo "Current branch:"
           git branch --show-current
-          echo "PR Head Ref: ${{ steps.pr_info.outputs.data.head.ref }}"
+          echo "PR Head Ref: ${{ fromJson(steps.pr_details.outputs.data).head.ref }}"
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Update GraphQL schema"
-            git push origin HEAD:${{ steps.pr_info.outputs.data.head.ref }}
+            git push origin HEAD:${{ fromJson(steps.pr_details.outputs.data).head.ref }}
           fi
