@@ -20,10 +20,15 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -A
-          echo ${{github.event.issue}}
+
+          # Logging all the info in github.event.issue as a JSON string
+          echo "GitHub Event Issue Information:"
+          echo '${{ toJson(github.event.issue) }}'
+
           echo "Current branch:"
           git branch --show-current
           echo "PR Head Ref: ${{ steps.pr_info.outputs.data.head.ref }}"
+
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
